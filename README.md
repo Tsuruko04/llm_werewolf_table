@@ -1,0 +1,1 @@
+# LLM Werewolf Table
