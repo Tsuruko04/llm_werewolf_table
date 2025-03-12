@@ -1,5 +1,5 @@
 import random
-
+import os
 from player import Player, Role
 class Game:
     def __init__(self):
@@ -25,7 +25,10 @@ class Game:
         """
         Stats the game
         """
-        pass
+        print("Game Over")
+        with open("game_history.txt","w") as f:
+            f.write("\n".join(self.game_history))
+        exit(0)
     
     def get_alive_player_no(self):
         return sorted([player.player_no for player in self.wolves + self.villagers + [self.witch,self.seer,self.hunter] if player.alive])
@@ -35,6 +38,10 @@ class Game:
             if player.player_no == player_no:
                 player.alive = False
                 break
+        finished,result = self.finished()
+        if finished:
+            print(result)
+            self.game_set()
             
     def finished(self):
         wolf_count = len([wolf for wolf in self.wolves if wolf.alive])
@@ -55,7 +62,7 @@ class Game:
             for wolf in self.wolves:
                 if not wolf.alive:
                     continue
-                voted = wolf.action(game_history=self.game_history,vote_history=vote_history)
+                voted = wolf.action(game_history=self.game_history,player_alive=self.get_alive_player_no(), vote_history=vote_history)
                 print(f"Wolf Player {wolf.player_no} vote to kill Player {voted}")
                 round_vote.append([wolf.player_no,int(voted)])
                 player_vote_count[int(voted)] += 1
@@ -76,7 +83,7 @@ class Game:
         
                 
     def night(self):
-        print("----------Night----------")
+        print("==========Night==========")
         print("Wolves: ", self.wolves)
         print("Villagers: ", self.villagers)
         print("Witch: ", self.witch)
@@ -84,10 +91,10 @@ class Game:
         print("Hunter: ", self.hunter)
         player_out = []
         wolf_killed = self.wolf_phase()
-        verified = self.seer.action(game_history=self.game_history)
+        verified = self.seer.action(game_history=self.game_history,player_alive=self.get_alive_player_no())
         print(f"Seer verified Player {verified}")
         if self.witch.alive:
-            save, poison = self.witch.action(game_history=self.game_history,player_killed=wolf_killed,num_antidote=self.num_antidote,num_poison=self.num_poison)
+            save, poison = self.witch.action(game_history=self.game_history,player_alive=self.get_alive_player_no(),player_killed=wolf_killed,num_antidote=self.num_antidote,num_poison=self.num_poison)
             if len(self.game_history) == 0:
                 if wolf_killed!=self.witch.player_no:
                     player_out.append(wolf_killed)
@@ -109,12 +116,12 @@ class Game:
                     player_out.append(wolf_killed)
         
         if self.hunter.alive and wolf_killed == self.hunter.player_no:
-            shot = self.hunter.action(game_history=self.game_history)
+            shot = self.hunter.action(game_history=self.game_history,player_alive=self.get_alive_player_no())
             player_out.append(shot)
             print(f"Hunter shot Player {shot}")
         for player_no in player_out:
             self.player_out(player_no)
-        print("----------Night End----------")
+        print("=========Night End==========")
         return sorted(player_out)
                 
     def speech(self, player_no, messages):
@@ -122,24 +129,107 @@ class Game:
             if player.alive and player.player_no == player_no:
                 return player.speech(self.game_history,messages)
             
-    def vote_phase():
-        pass
+    def vote_phase(self,candidates):
+        player_vote_count = [0]*10
+        messages = []
+        for player in self.wolves + self.villagers + [self.witch,self.seer,self.hunter]:
+            if player.alive:
+                vote = player.vote(self.game_history,[],candidates)
+                print(f"Player {player.player_no} vote to kill Player {vote}")
+                messages.append(f"Player {player.player_no} vote to kill Player {vote}")
+                player_vote_count[int(vote)] += 1
+        max_count = max(player_vote_count)
+        sequence = []
+        for i in range(1,10):
+            if player_vote_count[i] == max_count:
+                sequence.append(i)
+        if len(sequence)==1:
+            last_words = self.speech(sequence[0],messages+[f"Player {sequence[0]}, you have been sentenced as a werewolf, any last words?"])
+            messages.append(f"Player {sequence[0]}'s last words: {last_words}")
+            print(f"Player {sequence[0]}'s last words: {last_words}")
+            self.player_out(sequence[0])
+            print(f"Player {sequence[0]} is killed.")
+            self.game_history.append("\n".join(messages))
+            if sequence[0] == self.hunter.player_no:
+                shot = self.hunter.action(game_history=self.game_history,player_alive=self.get_alive_player_no())
+                print(f"Hunter shot Player {shot}")
+                self.player_out(shot)
+                print(f"Player {shot} is killed")
+        else:
+            player_vote_count = [0]*10
+            for player_no in sequence:
+                objection = self.speech(player_no,messages+[f"You have been sentenced as a werewolf, any objection?"])
+                messages.append(f"Player {player_no}'s objection: {objection}")
+                print(f"Player {player_no}'s objection: {objection}")
+            for player in self.wolves + self.villagers + [self.witch,self.seer,self.hunter]:
+                if player.alive:
+                    frozen_messages = messages.copy()
+                    vote = player.vote(self.game_history,frozen_messages,sequence)
+                    print(f"Player {player.player_no} vote to kill Player {vote}")
+                    messages.append(f"Player {player.player_no} vote to kill Player {vote}")
+                    player_vote_count[int(vote)] += 1
+
+            max_count = max(player_vote_count)
+            sequence = []
+            for i in range(1,10):
+                if player_vote_count[i] == max_count:
+                    sequence.append(i)
+            if len(sequence)==1:
+                last_words = self.speech(sequence[0],messages+[f"Player {sequence[0]}, you have been sentenced as a werewolf, any last words?"])
+                messages.append(f"Player {sequence[0]}'s last words: {last_words}")
+                print(f"Player {sequence[0]}'s last words: {last_words}")
+                self.player_out(sequence[0])
+                print(f"Player {sequence[0]} is killed.")
+                self.game_history.append("\n".join(messages))
+                if sequence[0] == self.hunter.player_no:
+                    shot = self.hunter.action(game_history=self.game_history,player_alive=self.get_alive_player_no())
+                    print(f"Hunter shot Player {shot}")
+                    self.player_out(shot)
+                    print(f"Player {shot} is killed.")
+            else:
+                messages.append("Tied, no one is killed.")
+                self.game_history.append("\n".join(messages))
+
     def day(self, player_out):
         print("----------Day----------")
         player_out_message = f"Last night, Player {",".join(player_out)} was killed."
         print(player_out_message)
         alive_players = self.get_alive_player_no()
         print("Alive players: ", alive_players)
-        start = random.choice(alive_players)
-        print(f"Player {start} start the speech")
-        messages = [player_out_message,f"Player {start} start the speech:"]
-        for player_no in alive_players:
-            if player_no >= start:
+        if len(player_out) == 0:
+            start = random.choice(alive_players)
+        else:
+            start = random.choice(player_out)
+        print(f"Speech start from position {start}")
+        messages = ["----------Day----------",player_out_message,f"Speech start from position {start}:"]
+        upward = random.randint(0,1)
+        if upward:
+            for player_no in alive_players:
+                if player_no >= start:
+                    messages.append(f"Player {player_no}: {self.speech(player_no,messages)}")
+                    print(f"Player {player_no}: {self.speech(player_no,messages)}")
+            for player_no in alive_players:
+                if player_no >= start:
+                    break
                 messages.append(f"Player {player_no}: {self.speech(player_no,messages)}")
                 print(f"Player {player_no}: {self.speech(player_no,messages)}")
-        for player_no in alive_players:
-            if player_no >= start:
-                break
-            messages.append(f"Player {player_no}: {self.speech(player_no,messages)}")
-            print(f"Player {player_no}: {self.speech(player_no,messages)}")
+        else:
+            for player_no in alive_players[::-1]:
+                if player_no <= start:
+                    messages.append(f"Player {player_no}: {self.speech(player_no,messages)}")
+                    print(f"Player {player_no}: {self.speech(player_no,messages)}")
+            for player_no in alive_players[::-1]:
+                if player_no <= start:
+                    break
+                messages.append(f"Player {player_no}: {self.speech(player_no,messages)}")
+                print(f"Player {player_no}: {self.speech(player_no,messages)}")
+
         self.game_history.append("\n".join(messages))
+        self.vote_phase(alive_players)
+        self.game_history.append("==========Night==========")
+        print("----------Day End----------")
+        
+    def startgame(self):
+        while True:
+            player_out = self.night()
+            self.day(player_out)

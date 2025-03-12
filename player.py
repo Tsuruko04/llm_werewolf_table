@@ -22,15 +22,20 @@ class Player:
     def __str__(self):
         return f"Player {self.player_no}(Alive: {self.alive})"
     
-    def action(self,game_history, **kwargsargs):
+    def action(self,game_history,player_alive, **kwargsargs):
         if self.role == Role.WEREWOLF:
-            return self.wolf_action(game_history,kwargsargs["vote_history"])
+            return self.wolf_action(game_history,player_alive,kwargsargs["vote_history"])
         if self.role == Role.WITCH:
-            return self.witch_action(game_history,kwargsargs["player_killed"],kwargsargs["num_antidote"],kwargsargs["num_poison"])
+            return self.witch_action(game_history,player_alive,kwargsargs["player_killed"],kwargsargs["num_antidote"],kwargsargs["num_poison"])
         if self.role == Role.SEER:
-            return self.seer_action(game_history)
+            return self.seer_action(game_history,player_alive)
         if self.role == Role.HUNTER:
-            return self.hunter_action(game_history)
+            return self.hunter_action(game_history,player_alive)
         
     def speech(self,game_history,messages):
+        raise NotImplementedError
         return ""
+    
+    def vote(self,game_history,messages,candidates):
+        raise NotImplementedError
+        return 0
