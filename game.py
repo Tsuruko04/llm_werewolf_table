@@ -1,5 +1,5 @@
 import random
-import os
+import time
 from player import Player, Role
 class Game:
     def __init__(self):
@@ -30,7 +30,8 @@ class Game:
         Stats the game
         """
         print("Game Over")
-        with open("game_history.txt","w") as f:
+        self.game_history.append("Game Over")
+        with open(f"public_game_history_{time.time()}.txt","w") as f:
             f.write("\n".join(self.game_history))
         exit(0)
     
@@ -45,6 +46,7 @@ class Game:
         finished,result = self.finished()
         if finished:
             print(result)
+            self.game_history.append(result)
             self.game_set()
             
     def finished(self):
@@ -72,11 +74,13 @@ class Game:
                 player_vote_count[int(voted)] += 1
             vote_history.append(f"Round {i+1}:\n"+"\n".join(round_vote))
         max_count = max(player_vote_count)
+        tied = []
         for i in range(1,10):
-            tied = []
+            
             print(f"Player {i} got {player_vote_count[i]} votes")
             if player_vote_count[i] == max_count:
                 tied.append(i)
+
         if len(tied) == 1:
             print(f"Player {tied[0]} is killed by wolves")
             return tied[0]
@@ -100,17 +104,20 @@ class Game:
         if self.witch.alive:
             save, poison = self.witch.action(game_history=self.game_history,player_alive=self.get_alive_player_no(),player_killed=wolf_killed,num_antidote=self.num_antidote,num_poison=self.num_poison)
             if len(self.game_history) == 0:
-                if wolf_killed!=self.witch.player_no:
-                    player_out.append(wolf_killed)
-                else:
-                    if save:
-                        self.num_antidote = 0
-            else:
-                if save and self.num_antidote == 1:
+                if save:
                     self.num_antidote = 0
                     print("Witch saved Player",wolf_killed)
-                elif wolf_killed == self.witch.player_no:
+                elif poison!=0 and self.num_poison == 1:
+                    self.num_poison = 0
+                    player_out.append(poison)
+                    print("Witch poisoned Player",poison)
                     player_out.append(wolf_killed)
+            else:
+                if wolf_killed == self.witch.player_no:
+                    player_out.append(wolf_killed)
+                elif save and self.num_antidote == 1:
+                    self.num_antidote = 0
+                    print("Witch saved Player",wolf_killed)
                 elif poison!=0 and self.num_poison == 1:
                     self.num_poison = 0
                     player_out.append(poison)
@@ -118,7 +125,8 @@ class Game:
                     player_out.append(wolf_killed)
                 else:
                     player_out.append(wolf_killed)
-        
+        else:
+            player_out.append(wolf_killed)
         if self.hunter.alive and wolf_killed == self.hunter.player_no:
             shot = self.hunter.action(game_history=self.game_history,player_alive=self.get_alive_player_no())
             player_out.append(shot)
@@ -134,6 +142,7 @@ class Game:
                 return player.speech(self.game_history,messages)
             
     def vote_phase(self,candidates):
+        print("----------Vote Phase----------")
         player_vote_count = [0]*10
         messages = []
         for player in self.wolves + self.villagers + [self.witch,self.seer,self.hunter]:
@@ -208,7 +217,12 @@ class Game:
 
     def day(self, player_out):
         print("----------Day----------")
-        player_out_message = f"Last night, Player {",".join(player_out)} was killed."
+        print("Wolves: ", self.wolves)
+        print("Villagers: ", self.villagers)
+        print("Witch: ", self.witch)
+        print("Seer: ", self.seer)
+        print("Hunter: ", self.hunter)
+        player_out_message = f"Last night, Player {player_out} was killed." if player_out else "Last night, no one was killed."
         print(player_out_message)
         alive_players = self.get_alive_player_no()
         print("Alive players: ", alive_players)

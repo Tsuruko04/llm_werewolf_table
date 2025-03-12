@@ -1,6 +1,6 @@
 import httpx
 import os
-from openai import OpenAI
+from openai import OpenAI,AzureOpenAI
 OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 client = OpenAI(
@@ -11,10 +11,16 @@ client = OpenAI(
         follow_redirects=True,
     ),
 )
+# client = AzureOpenAI(
+#     api_key = OPENAI_API_KEY,
+#     azure_endpoint= OPENAI_BASE_URL,
+#     api_version= "2024-05-01-preview"
+# )
 def generate_response(messages):
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4-1106",
         messages=messages,
+        temperature=0,
     )
     return response.choices[0].message.content
 
