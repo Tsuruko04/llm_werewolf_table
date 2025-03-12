@@ -6,8 +6,12 @@ class Game:
         players = [Player(i) for i in range(1,10)]
         shuffled = random.sample(players,len(players))
         self.wolves = shuffled[:3]
+        self.black_sheep_wall = ["good"]*10
+        wolf_ids = [wolf.player_no for wolf in self.wolves]
         for wolf in self.wolves:
             wolf.role = Role.WEREWOLF
+            wolf.private_message = wolf_ids
+            self.black_sheep_wall[wolf.player_no]="werewolf"
         self.villagers = shuffled[3:6]
         for villager in self.villagers:
             villager.role = Role.VILLAGER
@@ -64,9 +68,9 @@ class Game:
                     continue
                 voted = wolf.action(game_history=self.game_history,player_alive=self.get_alive_player_no(), vote_history=vote_history)
                 print(f"Wolf Player {wolf.player_no} vote to kill Player {voted}")
-                round_vote.append([wolf.player_no,int(voted)])
+                round_vote.append(f"Wolf Player {wolf.player_no} vote to kill Player {voted}")
                 player_vote_count[int(voted)] += 1
-            vote_history.append(round_vote)
+            vote_history.append(f"Round {i+1}:\n"+"\n".join(round_vote))
         max_count = max(player_vote_count)
         for i in range(1,10):
             tied = []
@@ -91,7 +95,7 @@ class Game:
         print("Hunter: ", self.hunter)
         player_out = []
         wolf_killed = self.wolf_phase()
-        verified = self.seer.action(game_history=self.game_history,player_alive=self.get_alive_player_no())
+        verified = self.seer.action(game_history=self.game_history,player_alive=self.get_alive_player_no(),black_sheep_wall=self.black_sheep_wall)
         print(f"Seer verified Player {verified}")
         if self.witch.alive:
             save, poison = self.witch.action(game_history=self.game_history,player_alive=self.get_alive_player_no(),player_killed=wolf_killed,num_antidote=self.num_antidote,num_poison=self.num_poison)
@@ -135,6 +139,10 @@ class Game:
         for player in self.wolves + self.villagers + [self.witch,self.seer,self.hunter]:
             if player.alive:
                 vote = player.vote(self.game_history,[],candidates)
+                if vote == 0:
+                    print(f"Player {player.player_no} gives up to vote.")
+                    messages.append(f"Player {player.player_no} gives up to vote.")
+                    continue
                 print(f"Player {player.player_no} vote to kill Player {vote}")
                 messages.append(f"Player {player.player_no} vote to kill Player {vote}")
                 player_vote_count[int(vote)] += 1
@@ -152,9 +160,11 @@ class Game:
             self.game_history.append("\n".join(messages))
             if sequence[0] == self.hunter.player_no:
                 shot = self.hunter.action(game_history=self.game_history,player_alive=self.get_alive_player_no())
-                print(f"Hunter shot Player {shot}")
-                self.player_out(shot)
-                print(f"Player {shot} is killed")
+                if shot!=0:
+                    print(f"Hunter shot Player {shot}")
+                    self.player_out(shot)
+                    print(f"Player {shot} is killed")
+                    self.game_history[-1]+=f"Hunter shot Player {shot}"
         else:
             player_vote_count = [0]*10
             for player_no in sequence:
@@ -165,6 +175,10 @@ class Game:
                 if player.alive:
                     frozen_messages = messages.copy()
                     vote = player.vote(self.game_history,frozen_messages,sequence)
+                    if vote == 0:
+                        print(f"Player {player.player_no} gives up to vote.")
+                        messages.append(f"Player {player.player_no} gives up to vote.")
+                        continue
                     print(f"Player {player.player_no} vote to kill Player {vote}")
                     messages.append(f"Player {player.player_no} vote to kill Player {vote}")
                     player_vote_count[int(vote)] += 1
@@ -183,9 +197,11 @@ class Game:
                 self.game_history.append("\n".join(messages))
                 if sequence[0] == self.hunter.player_no:
                     shot = self.hunter.action(game_history=self.game_history,player_alive=self.get_alive_player_no())
-                    print(f"Hunter shot Player {shot}")
-                    self.player_out(shot)
-                    print(f"Player {shot} is killed.")
+                    if shot != 0:
+                        print(f"Hunter shot Player {shot}")
+                        self.player_out(shot)
+                        print(f"Player {shot} is killed.")
+                        self.game_history[-1]+=f"Hunter shot Player {shot}"
             else:
                 messages.append("Tied, no one is killed.")
                 self.game_history.append("\n".join(messages))

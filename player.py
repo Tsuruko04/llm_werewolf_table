@@ -15,7 +15,7 @@ class Player:
         self.player_no = player_no
         self.role = Role.DEFAULT
         self.alive = True
-        self.private_message = []
+        self.private_message = [] 
     def __repr__(self):
         return f"Player {self.player_no}(Alive: {self.alive})"
     
@@ -28,14 +28,66 @@ class Player:
         if self.role == Role.WITCH:
             return self.witch_action(game_history,player_alive,kwargsargs["player_killed"],kwargsargs["num_antidote"],kwargsargs["num_poison"])
         if self.role == Role.SEER:
-            return self.seer_action(game_history,player_alive)
+            return self.seer_action(game_history,player_alive,kwargsargs["black_sheep_wall"])
         if self.role == Role.HUNTER:
             return self.hunter_action(game_history,player_alive)
         
-    def speech(self,game_history,messages):
-        raise NotImplementedError
+    def role_prompt(self):
+        if self.role == Role.WEREWOLF:
+            return prompt.werewolf_prompt.format(game_rules=prompt.game_rules+prompt.wolfgame_background,player_no = self.player_no,wolves_no=",".join(self.private_message) )
+        if self.role == Role.VILLAGER:
+            return prompt.villager_prompt.format(game_rules=prompt.game_rules+prompt.wolfgame_background,player_no = self.player_no)
+        if self.role == Role.WITCH:
+            return prompt.witch_prompt.format(game_rules=prompt.game_rules+prompt.wolfgame_background,player_no = self.player_no)
+        if self.role == Role.SEER:
+            return prompt.seer_prompt.format(game_rules=prompt.game_rules+prompt.wolfgame_background,player_no = self.player_no)
+        if self.role == Role.HUNTER:
+            return prompt.hunter_prompt.format(game_rules=prompt.game_rules+prompt.wolfgame_background,player_no = self.player_no)
         return ""
     
+    def wolf_action(self, game_history, player_alive,vote_history):
+        role_prompt = self.role_prompt()
+        game_prompt = "The public history information of the ongoing game is:\n" + "\n".join(game_history)
+        act_prompt = prompt.werewolf_action_prompt.format(voting_history="\n".join(vote_history),players = ",".join(player_alive))
+        return generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}])
+    
+    def witch_action(self, game_history, player_alive,player_killed,num_antidote,num_poison):
+        role_prompt = self.role_prompt()
+        game_prompt = "The public history information of the ongoing game is:\n" + "\n".join(game_history)
+        act_prompt = prompt.witch_action_prompt.format(player_killed = player_killed,num_antidote=num_antidote,num_poison=num_poison,players = ",".join(player_alive))
+        result = generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}])
+        save,poison = result.split(",")
+        if save == "yes":
+            return True, int(poison)
+        else:
+            return False, int(poison)
+        
+    def seer_action(self,game_history,player_alive,black_sheep_wall):
+        role_prompt = self.role_prompt()
+        game_prompt = "The public history information of the ongoing game is:\n" + "\n".join(game_history)+f"As the Seer, you have known that: "+ "\n".join(self.private_message)
+        act_prompt = prompt.seer_action_prompt.format(players = player_alive)
+        verified = generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}])
+        self.private_message.append(f"Player {verified} is {black_sheep_wall[verified]}")
+        return verified
+    
+    def hunter_action(self,game_history,player_alive):
+        role_prompt = self.role_prompt()
+        game_prompt = "The public history information of the ongoing game is:\n" + "\n".join(game_history)
+        act_prompt = prompt.hunter_action_prompt.format(players = player_alive)
+        return generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}])
+    
+    def speech(self,game_history,messages):
+        role_prompt = self.role_prompt()
+        game_prompt = "The public history information of the ongoing game is:\n" + "\n".join(game_history)
+        private_info = "As a seer, you have known that: "+ "\n".join(self.private_message) if self.role==Role.SEER else ""
+        speech_prompt = "The discussion and voting of the current phase are:\n" + "\n".join(messages)+ "\nNow, it's your turn to speak."
+        return generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt+private_info},{'role':'user','content':speech_prompt}])
+
+    
     def vote(self,game_history,messages,candidates):
-        raise NotImplementedError
-        return 0
+        role_prompt = self.role_prompt()
+        game_prompt = "The public history information of the ongoing game is:\n" + "\n".join(game_history)
+        private_info = "As a seer, you have known that: "+ "\n".join(self.private_message) if self.role==Role.SEER else ""
+        messages_prompt = "The discussion and voting of the current phase are:\n" + "\n".join(messages)
+        vote_prompt =prompt.vote_prompt.format(players = ",".join(candidates))
+        return int(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt+private_info},{'role':'user','content':messages_prompt+vote_prompt}]))

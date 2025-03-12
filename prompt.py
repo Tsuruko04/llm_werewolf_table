@@ -256,7 +256,7 @@ werewolf_prompt = """
 You are a player in a 9-player Werewolf game.
 {game_rules}
 Your identity is assigned as a Werewolf.
-You are Player {player_no}. Your teammates are Player {teammate1}, Player {teammate2}.
+You are Player {player_no}. The werewolves on the table are Player {wolves_no}.
 """
 
 werewolf_action_prompt = """
@@ -280,7 +280,8 @@ The Witch cannot use both potions in the same night and can only save herself on
 Player {player_killed} has been killed by the Werewolves at night, you have {num_antidote} antidote.
 If you want to use your poison, please provide a player number. Players remained: {players}. You have {num_poison} poison.
 If you don't want to use your poison, please choose number 0.
-Give your answer in the format: yes|no,<player_no>. for example, if you want to save and poison Player 5, please answer: yes,5; if you neither want to save nor poison, answer: no,0. 
+Give your answer in the format: yes|no,<player_no>. for example, if you want to save and poison Player 5, please answer: yes,5; if you neither want to save nor poison, answer: no,0.
+Remeber, you can only use either antidote or poison in a night. 
 """
 
 seer_prompt = """
@@ -305,4 +306,8 @@ You are Player {player_no}.
 hunter_action_prompt = """
 You have been killed, now you can choose a player to kill.
 Please provide a player number. Players remained: {players}. If you don't want to shoot, please provide 0. Only provide the number. 
+"""
+
+vote_prompt = """
+Now, it's your turn to vote a player to be sentenced. Please provide a player number from the following players: {players}. If you don't want to vote, please provide 0. Only provide the number.
 """
