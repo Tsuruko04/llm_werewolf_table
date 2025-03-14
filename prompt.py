@@ -130,7 +130,57 @@ are three werewolves.
 one, six, eight, three wolves" results in:"identities": "gold water":[3],
 "slash":[9], "werewolf":[1,6,8]
 """
+speech_examples_few_shot = """
+# The following are examples of speeches:
 
+"I checked Player 6, and I suggest Player 8 turn around and vote
+for Player 6. I will check the identity of Player 4 in the next round."
+
+"Player 2 and I are collaboratively searching for a Seer. Player
+2 assists the good faction in combating werewolves. There’s a possibility that
+Player 9 is a werewolf, although I am not certain. The behavior of Player 9 seems
+suspiciously similar to that of Player 2, who possesses the ability to shoot.
+Additionally, Player 4 is identified as a Witch. Regarding the usage of silver
+water, I suggest targeting Player 6."
+
+"Player 8 is the gold water. Player 2 is not a werewolf, neither
+is Player 3. However, Player 7 is suspicious, and I recommend voting against Player
+7. The roles of Player 4 and Player 5 are unclear, and Player 1 suspects both of
+them to be werewolves. I advise Player 7 to use poison, which could help confirm
+my role as a Seer. Concerning the hunter, there is a standoff between Player 8
+and myself. If there is any uncertainty about Players 1, 2, or 4, the gun should
+be used in this situation against Player 2. Now, it’s time for Players 4 and 7 to
+present their arguments, and there is no need to focus on Player 9."
+
+"Being the first player to speak, my turn was conveniently arranged.
+However, I am uncertain about Player 2’s allegiance. In my view, Player 2 lacks
+credibility."
+
+"Player 3 will be poisoned tonight. I hold the Witch card. I heed
+the guidance of the two players with gold cards. Players 9 and 5 are identified as
+wolves. Players 4 and 6 hold cards corresponding to their numbers, with Player 4
+being more trustworthy than Player 5. Player 3 cannot be revived. To preserve my
+own safety, I will reveal myself as the Witch. I have already used the silver water
+card on Player 1. Player 9 remarked that I should be pleased with this misfortune,
+indicating that the prime werewolf card was passed to a fellow teammate."
+
+"Player 5 appears highly suspicious. He could either be a werewolf
+or might be deceiving his teammates. His failure to set wolf traps, dishonesty
+about the wheat sequence, and excessive talking during the first microphone turn is
+concerning. Players 6 and 7 might be superficial wolves. Player 7, however, seems
+to have a sensible perspective and could be part of the good camp. I recommend
+voting against Player 5."
+
+"Regarding the game, my suspicion falls on Players 1, 5, 7, and 
+3 as potential wolves. The accusation by Player 3, however, is incorrect. I find
+Player 3’s judgment flawed. It’s frustrating. Similarly, I suspect that Players 1,
+5, 7, and 3 are wolves according to Player 5’s perspective. Let’s test this theory.
+I propose we eliminate Player 5 today, and then I, as a Witch, will poison Player 7
+tomorrow night. Observe the game’s progression tomorrow, and you will see that both
+Player 5 and I, as Witches, agree on Player 2, and our views align with Player 3’s
+decision. Therefore, I request that we focus on Player 5 first."
+
+"""
 information_extraction_few_shot = """
 # The following are 11 speeches and corresponding information extraction examples:
 Player 3 spoke: "I checked Player 6, and I suggest Player 8 turn around and vote
@@ -280,7 +330,7 @@ The Witch cannot use both potions in the same night and can only save herself on
 Player {player_killed} has been killed by the Werewolves at night, you have {num_antidote} antidote.
 If you want to use your poison, please provide a player number. Players remained: {players}. You have {num_poison} poison.
 If you don't want to use your poison, please choose number 0.
-Give your answer in the format: yes|no,<player_no>. for example, if you want to save and poison Player 5, please answer: yes,5; if you neither want to save nor poison, answer: no,0.
+Give your answer in the format: yes|no,<player_no>. for example, if you want to save the player killed, please answer: yes,0; if you neither want to save nor poison, answer: no,0; if you want to poison player 3, answer: no,3.
 Remeber, you can only use either antidote or poison in a night. 
 """
 

@@ -57,8 +57,9 @@ class Player:
         act_prompt = prompt.witch_action_prompt.format(player_killed = player_killed,num_antidote=num_antidote,num_poison=num_poison,players = player_alive)
         result = generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}])
         save,poison = result.split(",")
-        if save == "yes":
-            return True, int(poison)
+        print("witch response:",save,poison)
+        if save in ["yes","Yes","YES"]:
+            return True, 0
         else:
             return False, int(poison)
         
@@ -79,9 +80,14 @@ class Player:
     def speech(self,game_history,messages):
         role_prompt = self.role_prompt()
         game_prompt = "The public history information of the ongoing game is:\n" + "\n".join(game_history)
-        private_info = "As a seer, you have known that: "+ "\n".join(self.private_message) if self.role==Role.SEER else ""
-        speech_prompt = "The discussion and voting of the current phase are:\n" + "\n".join(messages)+ "\nNow, it's your turn to speak. Rememebr, you are actually playing the game, every word you reply will be known by other players. Please only provide the speech content. Your response should be short and concise."
-        return generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt+private_info+speech_prompt}])
+        if self.role==Role.SEER:
+            private_info = "As a seer, you have known that: "+ "\n".join(self.private_message)
+        elif self.role==Role.WITCH:
+            private_info = "As a witch, you have known that: "+ "\n".join(self.private_message)
+        else:
+            private_info = ""
+        speech_prompt = "The discussion and voting of the current phase are:\n" + "\n".join(messages)+ "\nNow, it's your turn to speak. Rememebr, you are actually playing the game, every word you reply will be known by other players. Please only provide the speech content. Your response should be short and concise. Please provide who you think is the werewolf and why in the speech."
+        return generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt+private_info+prompt.speech_examples_few_shot+speech_prompt}])
 
     
     def vote(self,game_history,messages,candidates):

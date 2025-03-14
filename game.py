@@ -99,29 +99,35 @@ class Game:
         print("Hunter: ", self.hunter)
         player_out = []
         wolf_killed = self.wolf_phase()
-        verified = self.seer.action(game_history=self.game_history,player_alive=self.get_alive_player_no(),black_sheep_wall=self.black_sheep_wall)
-        print(f"Seer verified Player {verified}")
+        if self.seer.alive:
+            verified = self.seer.action(game_history=self.game_history,player_alive=self.get_alive_player_no(),black_sheep_wall=self.black_sheep_wall)
+            print(f"Seer verified Player {verified}")
         if self.witch.alive:
             save, poison = self.witch.action(game_history=self.game_history,player_alive=self.get_alive_player_no(),player_killed=wolf_killed,num_antidote=self.num_antidote,num_poison=self.num_poison)
+            print(f"Witch saved: {save}, Witch poisoned: {poison}")
             if len(self.game_history) == 0:
                 if save:
                     self.num_antidote = 0
-                    print("Witch saved Player",wolf_killed)
+                    self.witch.private_message.append(f"You have saved Player {wolf_killed}.")
+                    wolf_killed = 0
                 elif poison!=0 and self.num_poison == 1:
                     self.num_poison = 0
                     player_out.append(poison)
-                    print("Witch poisoned Player",poison)
+                    self.witch.private_message.append(f"You have poisoned Player {poison}.")
+                    player_out.append(wolf_killed)
+                else:
                     player_out.append(wolf_killed)
             else:
                 if wolf_killed == self.witch.player_no:
                     player_out.append(wolf_killed)
                 elif save and self.num_antidote == 1:
                     self.num_antidote = 0
-                    print("Witch saved Player",wolf_killed)
+                    self.witch.private_message.append(f"You have saved Player {wolf_killed}.")
+                    wolf_killed = 0
                 elif poison!=0 and self.num_poison == 1:
                     self.num_poison = 0
                     player_out.append(poison)
-                    print("Witch poisoned Player",poison)
+                    self.witch.private_message.append(f"You have poisoned Player {poison}.")
                     player_out.append(wolf_killed)
                 else:
                     player_out.append(wolf_killed)
@@ -236,23 +242,23 @@ class Game:
         if upward:
             for player_no in alive_players:
                 if player_no >= start:
-                    messages.append(f"Player {player_no}: {self.speech(player_no,messages)}")
-                    print(f"Player {player_no}: {self.speech(player_no,messages)}")
+                    messages.append(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
+                    print(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
             for player_no in alive_players:
                 if player_no >= start:
                     break
-                messages.append(f"Player {player_no}: {self.speech(player_no,messages)}")
-                print(f"Player {player_no}: {self.speech(player_no,messages)}")
+                messages.append(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
+                print(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
         else:
             for player_no in alive_players[::-1]:
                 if player_no <= start:
-                    messages.append(f"Player {player_no}: {self.speech(player_no,messages)}")
-                    print(f"Player {player_no}: {self.speech(player_no,messages)}")
+                    messages.append(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
+                    print(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
             for player_no in alive_players[::-1]:
                 if player_no <= start:
                     break
-                messages.append(f"Player {player_no}: {self.speech(player_no,messages)}")
-                print(f"Player {player_no}: {self.speech(player_no,messages)}")
+                messages.append(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
+                print(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
 
         self.game_history.append("\n".join(messages))
         self.vote_phase(alive_players)
