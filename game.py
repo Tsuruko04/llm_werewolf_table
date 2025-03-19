@@ -1,6 +1,7 @@
 import random
 import time
 from player import Player, Role
+from utils import get_total_usage
 class Game:
     def __init__(self):
         players = [Player(i) for i in range(1,10)]
@@ -31,6 +32,7 @@ class Game:
         """
         print("Game Over")
         self.game_history.append("Game Over")
+        self.game_history.append(f"Total usage: {get_total_usage()}")
         with open(f"public_game_history_{time.time()}.txt","w") as f:
             f.write("\n".join(self.game_history))
         exit(0)
@@ -269,3 +271,4 @@ class Game:
         while True:
             player_out = self.night()
             self.day(player_out)
+            print(f"{get_total_usage()}")
