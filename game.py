@@ -1,10 +1,19 @@
 import random
 import time
+import yaml
 from player import Player, Role
 from utils import get_total_usage
 class Game:
     def __init__(self):
+        settings = yaml.safe_load(open("./settings.yaml"))
+        agents = settings["agents"]
         players = [Player(i) for i in range(1,10)]
+        i = 0
+        for model, num in agents.items():
+            for j in range(num):
+                players[i+j].model = model
+            i += num
+        
         shuffled = random.sample(players,len(players))
         self.wolves = shuffled[:3]
         self.black_sheep_wall = ["good"]*10

@@ -16,11 +16,12 @@ class Player:
         self.role = Role.DEFAULT
         self.alive = True
         self.private_message = [] 
+        self.model = "gpt-4o"
     def __repr__(self):
-        return f"Player {self.player_no}(Alive: {self.alive})"
+        return f"Player {self.player_no}({self.model})(Alive: {self.alive})"
     
     def __str__(self):
-        return f"Player {self.player_no}(Alive: {self.alive})"
+        return f"Player {self.player_no}({self.model})(Alive: {self.alive})"
     
     def action(self,game_history,player_alive, **kwargsargs):
         if self.role == Role.WEREWOLF:
@@ -49,13 +50,13 @@ class Player:
         role_prompt = self.role_prompt()
         game_prompt = "The public history information of the ongoing game is:\n" + "\n".join(game_history)
         act_prompt = prompt.werewolf_action_prompt.format(voting_history="\n".join(vote_history),players = player_alive)
-        return int(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}]))
+        return int(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}],model=self.model))
     
     def witch_action(self, game_history, player_alive,player_killed,num_antidote,num_poison):
         role_prompt = self.role_prompt()
         game_prompt = "The public history information of the ongoing game is:\n" + "\n".join(game_history)
         act_prompt = prompt.witch_action_prompt.format(player_killed = player_killed,num_antidote=num_antidote,num_poison=num_poison,players = player_alive)
-        result = generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}])
+        result = generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}],model=self.model)
         save,poison = result.split(",")
         print("witch response:",save,poison)
         if save in ["yes","Yes","YES"]:
@@ -67,7 +68,7 @@ class Player:
         role_prompt = self.role_prompt()
         game_prompt = "The public history information of the ongoing game is:\n" + "\n".join(game_history)+f"As the Seer, you have known that: "+ "\n".join(self.private_message)
         act_prompt = prompt.seer_action_prompt.format(players = player_alive)
-        verified = int(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}]))
+        verified = int(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}],model=self.model))
         self.private_message.append(f"Player {verified} is {black_sheep_wall[verified]}")
         return verified
     
@@ -75,7 +76,7 @@ class Player:
         role_prompt = self.role_prompt()
         game_prompt = "The public history information of the ongoing game is:\n" + "\n".join(game_history)
         act_prompt = prompt.hunter_action_prompt.format(players = player_alive)
-        return int(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}]))
+        return int(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}],model=self.model))
     
     def speech(self,game_history,messages):
         role_prompt = self.role_prompt()
@@ -87,7 +88,7 @@ class Player:
         else:
             private_info = ""
         speech_prompt = "The discussion and voting of the current phase are:\n" + "\n".join(messages)+ "\nNow, it's your turn to speak. Rememebr, you are actually playing the game, every word you reply will be known by other players. Please only provide the speech content. Your response should be short and concise. Please provide who you think is the werewolf and why in the speech."
-        return generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt+private_info+prompt.speech_examples_few_shot+speech_prompt}])
+        return generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt+private_info+prompt.speech_examples_few_shot+speech_prompt}],model=self.model)
 
     
     def vote(self,game_history,messages,candidates):
@@ -96,7 +97,7 @@ class Player:
         private_info = "As a seer, you have known that: "+ "\n".join(self.private_message) if self.role==Role.SEER else ""
         messages_prompt = "The discussion and voting of the current phase are:\n" + "\n".join(messages)
         vote_prompt =prompt.vote_prompt.format(players = candidates)
-        return int(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt+private_info},{'role':'user','content':messages_prompt+vote_prompt}]))
+        return int(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt+private_info},{'role':'user','content':messages_prompt+vote_prompt}],model=self.model))
 
 
 
