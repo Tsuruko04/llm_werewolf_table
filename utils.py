@@ -4,7 +4,7 @@ from openai import OpenAI, AzureOpenAI
 
 OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL") 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-FASTCHAT_BASE_URL = "http://127.0.0.1:5555/v1"  # 注意添加了/v1路径
+FASTCHAT_BASE_URL = "http://127.0.0.1:55555/v1"  # 注意添加了/v1路径
 prompt_token = 0
 completion_token = 0
 
@@ -30,8 +30,8 @@ fastchat_client = OpenAI(
 
 def generate_response(messages, model="gpt-4o"):
     global prompt_token, completion_token
-
-    if model.lower().startswith("llama"):
+    print(f"使用模型: {model}")
+    if model.lower().startswith(("llama","meta")):
         # 使用FastChat客户端
         response = fastchat_client.chat.completions.create(
             model=model,  # 确保与FastChat注册的模型名称匹配
@@ -67,7 +67,8 @@ if __name__ == "__main__":
     print(generate_response(messages, "gpt-4o"))
     print(f"当前Token用量: {get_total_usage()}")
     
-    # 测试FastChat本地模型
-    print("\n测试本地Llama模型:")
-    print(generate_response(messages, "llama-2-7b-chat"))  # 使用实际注册的模型名称
-    print(f"当前Token用量: {get_total_usage()}")
+    # # 测试FastChat本地模型
+    # print("\n测试本地Llama模型:")
+    # print(generate_response(messages, "llama-2-7b-chat"))  # 使用实际注册的模型名称
+    # print(f"当前Token用量: {get_total_usage()}")
+    

@@ -314,7 +314,8 @@ Now, you need to decide on your action for the night. You can choose to kill a p
 The majority of the Werewolves’ choice will be the final kill target. If there is a tie, a random player in the tie is killed.
 Here's the voting history:
 {voting_history}
-Please provide the player number you choose to kill. Players remained: {players}. Please only provide the number.
+End of the history:
+Please provide the player number you choose to kill. Players remained: {players}. Please only provide the number. As a werewolf, I choose to kill:
 """
 
 witch_prompt = """
@@ -330,8 +331,8 @@ The Witch cannot use both potions in the same night and can only save herself on
 Player {player_killed} has been killed by the Werewolves at night, you have {num_antidote} antidote.
 If you want to use your poison, please provide a player number. Players remained: {players}. You have {num_poison} poison.
 If you don't want to use your poison, please choose number 0.
-Give your answer in the format: yes|no,<player_no>. for example, if you want to save the player killed, please answer: yes,0; if you neither want to save nor poison, answer: no,0; if you want to poison player 3, answer: no,3.
-Remeber, you can only use either antidote or poison in a night. 
+Remeber, you can only use either antidote or poison in a night.
+Please provide you thought and choice. As the witch, I think:
 """
 
 seer_prompt = """
@@ -343,7 +344,7 @@ You are Player {player_no}.
 
 seer_action_prompt = """
 Now, you need to decide on your action for the night. You can choose a player to verify whether him/her is a werewolf.
-Please provide a player number. Players remained: {players}. Only provide the number.
+Please provide a player number. Players remained: {players}. Only provide the number. As the seer, I choose to check:
 """
 
 hunter_prompt = """
@@ -356,8 +357,37 @@ You are Player {player_no}.
 hunter_action_prompt = """
 You have been killed, now you can choose a player to kill.
 Please provide a player number. Players remained: {players}. If you don't want to shoot, please provide 0. Only provide the number. 
+I choose to kill:
 """
 
 vote_prompt = """
 Now, it's your turn to vote a player to be sentenced. Please provide a player number from the following players: {players}. If you don't want to vote, please provide 0. Only provide the number.
+I choose to vote:
+"""
+
+parse_wolf_action_prompt = """
+The werewolf gives the following response: {response}
+Please parse the response and provide the player number that the werewolf has decided to kill.
+Only provide the number. For example: Given "I choose to kill Player 4.", you should respond with 4
+"""
+
+parse_witch_action_prompt = """
+The witch gives the following response: {response}
+Please parse the response and give your answer in the format: yes|no,<player_no>. for example, if save the player killed, please answer: yes,0; if neither want to save nor poison, answer: no,0; if poison player 3, answer: no,3.
+""" 
+parse_seer_action_prompt = """
+The seer gives the following response: {response}
+Please parse the response and provide the player number that the seer has decided to check.
+Only provide the number. For example: Given "I choose to check Player 4.", you should respond with 4
+"""
+parse_hunter_action_prompt = """
+The hunter gives the following response: {response}
+Please parse the response and provide the player number that the hunter has decided to kill.
+Only provide the number. For example: Given "I choose to kill Player 4.", you should respond with 4
+"""
+
+parse_vote_prompt = """
+The player gives the following response: {response}
+Please parse the response and provide the player number that the player has decided to vote.
+Only provide the number. For example: Given "I choose to vote Player 4.", you should respond with 4
 """

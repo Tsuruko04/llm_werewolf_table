@@ -1,4 +1,6 @@
 agents:
- gpt-4o: 4
- llama: 4
- gpt-3.5: 1
+#  gpt-4o: 4
+#  llama: 4
+#  gpt-3.5: 1
+ deepseek-v3: 9
+parse_model: deepseek-v3

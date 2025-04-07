@@ -1,6 +1,9 @@
 from enum import Enum
 from utils import generate_response
 import prompt 
+import yaml
+PARSE_MODEL = yaml.safe_load(open("./settings.yaml", "r"))["parse_model"]
+print("PARSE_MODEL:",PARSE_MODEL)
 class Role(Enum):
     DEFAULT = 0
     WEREWOLF = 1
@@ -50,25 +53,20 @@ class Player:
         role_prompt = self.role_prompt()
         game_prompt = "The public history information of the ongoing game is:\n" + "\n".join(game_history)
         act_prompt = prompt.werewolf_action_prompt.format(voting_history="\n".join(vote_history),players = player_alive)
-        return int(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}],model=self.model))
+        return self._parse_wolf_action(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}],model=self.model))
     
     def witch_action(self, game_history, player_alive,player_killed,num_antidote,num_poison):
         role_prompt = self.role_prompt()
         game_prompt = "The public history information of the ongoing game is:\n" + "\n".join(game_history)
         act_prompt = prompt.witch_action_prompt.format(player_killed = player_killed,num_antidote=num_antidote,num_poison=num_poison,players = player_alive)
         result = generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}],model=self.model)
-        save,poison = result.split(",")
-        print("witch response:",save,poison)
-        if save in ["yes","Yes","YES"]:
-            return True, 0
-        else:
-            return False, int(poison)
+        return self._parse_witch_action(result)
         
     def seer_action(self,game_history,player_alive,black_sheep_wall):
         role_prompt = self.role_prompt()
         game_prompt = "The public history information of the ongoing game is:\n" + "\n".join(game_history)+f"As the Seer, you have known that: "+ "\n".join(self.private_message)
         act_prompt = prompt.seer_action_prompt.format(players = player_alive)
-        verified = int(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}],model=self.model))
+        verified = self._parse_seer_action(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}],model=self.model))
         self.private_message.append(f"Player {verified} is {black_sheep_wall[verified]}")
         return verified
     
@@ -76,7 +74,7 @@ class Player:
         role_prompt = self.role_prompt()
         game_prompt = "The public history information of the ongoing game is:\n" + "\n".join(game_history)
         act_prompt = prompt.hunter_action_prompt.format(players = player_alive)
-        return int(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}],model=self.model))
+        return self._parse_hunter_action(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt},{'role':'user','content':act_prompt}],model=self.model))
     
     def speech(self,game_history,messages):
         role_prompt = self.role_prompt()
@@ -97,10 +95,35 @@ class Player:
         private_info = "As a seer, you have known that: "+ "\n".join(self.private_message) if self.role==Role.SEER else ""
         messages_prompt = "The discussion and voting of the current phase are:\n" + "\n".join(messages)
         vote_prompt =prompt.vote_prompt.format(players = candidates)
-        return int(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt+private_info},{'role':'user','content':messages_prompt+vote_prompt}],model=self.model))
+        return self._parse_vote(generate_response([{'role':'system','content':role_prompt+"\n"+game_prompt+private_info},{'role':'user','content':messages_prompt+vote_prompt}],model=self.model))
 
-
-
+    def _parse_wolf_action(self, text):
+        print("THOUGHT:",text)
+        return int(generate_response([{'role':'system','content':prompt.wolfgame_background},{'role':'user','content':prompt.parse_wolf_action_prompt.format(response=text)}],model=PARSE_MODEL))
+        
+    def _parse_witch_action(self, text):
+        print("THOUGHT:",text)
+        result =  generate_response([{'role':'system','content':prompt.wolfgame_background},{'role':'user','content':prompt.parse_witch_action_prompt.format(response=text)}],model=PARSE_MODEL)
+        save,poison = result.split(',')
+        if save in ["yes","Yes","YES"]:
+            save = True
+            poison = 0
+        else:
+            save = False
+            poison = int(poison)
+        return save, poison
+    def _parse_seer_action(self, text):
+        print("THOUGHT:",text)
+        return int(generate_response([{'role':'system','content':prompt.wolfgame_background},{'role':'user','content':prompt.parse_seer_action_prompt.format(response=text)}],model=PARSE_MODEL))
+    
+    def _parse_hunter_action(self, text):
+        print("THOUGHT:",text)
+        return int(generate_response([{'role':'system','content':prompt.wolfgame_background},{'role':'user','content':prompt.parse_hunter_action_prompt.format(response=text)}],model=PARSE_MODEL))
+    
+    def _parse_vote(self, text):
+        print("THOUGHT:",text)
+        return int(generate_response([{'role':'system','content':prompt.wolfgame_background},{'role':'user','content':prompt.parse_vote_prompt.format(response=text)}],model=PARSE_MODEL))
+    
 if __name__ == "__main__":
     player = Player(1)
     player.role = Role.WEREWOLF
