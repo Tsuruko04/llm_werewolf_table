@@ -4,10 +4,10 @@ from openai import OpenAI, AzureOpenAI
 
 OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL") 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-FASTCHAT_BASE_URL = "http://127.0.0.1:55555/v1"  # 注意添加了/v1路径
+FASTCHAT_BASE_URL = "http://0.0.0.0:21003/v1"  # 注意添加了/v1路径
 prompt_token = 0
 completion_token = 0
-
+MAX_RETRIES = 3
 def get_total_usage():
     global prompt_token, completion_token
     return prompt_token, completion_token
@@ -20,40 +20,54 @@ openai_client = OpenAI(
         base_url=OPENAI_BASE_URL if OPENAI_BASE_URL else "https://api.openai.com/v1",
         follow_redirects=True,
     ),
+    timeout = 20
 )
 
 # 初始化FastChat客户端（用于本地模型）
 fastchat_client = OpenAI(
     base_url=FASTCHAT_BASE_URL,
     api_key="EMPTY",  # FastChat不需要验证的API密钥
+    timeout = 20
 )
 
 def generate_response(messages, model="gpt-4o"):
     global prompt_token, completion_token
-    print(f"使用模型: {model}")
-    if model.lower().startswith(("llama","meta")):
-        # 使用FastChat客户端
-        response = fastchat_client.chat.completions.create(
-            model=model,  # 确保与FastChat注册的模型名称匹配
-            messages=messages,
-            temperature=0,
-        )
-    else:
-        # 使用OpenAI客户端
-        response = openai_client.chat.completions.create(
-            model=model,
-            messages=messages,
-            temperature=0,
-        )
+    retried = 0
+    # print(f"使用模型: {model}")
+    
+    while retried < MAX_RETRIES:
+        if retried > 0:
+            print("Connection Timout Retries:",retried)
+        try:
+            if model.lower().startswith("meta"):
+                # 使用FastChat客户端
+                response = fastchat_client.chat.completions.create(
+                    model=model,  # 确保与FastChat注册的模型名称匹配
+                    messages=messages,
+                    temperature=0,
+                )
+            else:
+                # 使用OpenAI客户端
+                response = openai_client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=0,
+                )
+            try:
+                prompt_token += response.usage.prompt_tokens
+                completion_token += response.usage.completion_tokens
+            except AttributeError:
+                print("Warning: API响应中缺少usage信息，无法统计Token用量")
 
+            return response.choices[0].message.content
+        except Exception as e:
+            print(e)
+            retried+=1
+
+    raise ConnectionError
+        
     # 统计Token使用量（兼容处理）
-    try:
-        prompt_token += response.usage.prompt_tokens
-        completion_token += response.usage.completion_tokens
-    except AttributeError:
-        print("Warning: API响应中缺少usage信息，无法统计Token用量")
-
-    return response.choices[0].message.content
+    
 
 if __name__ == "__main__":
     # 测试本地Llama模型

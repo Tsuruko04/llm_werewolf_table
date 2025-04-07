@@ -389,5 +389,5 @@ Only provide the number. For example: Given "I choose to kill Player 4.", you sh
 parse_vote_prompt = """
 The player gives the following response: {response}
 Please parse the response and provide the player number that the player has decided to vote.
-Only provide the number. For example: Given "I choose to vote Player 4.", you should respond with 4
+Only provide the number. For example: Given "I choose to vote Player 4.", you should respond with 4. If no player mentioned, please respond 0.
 """
