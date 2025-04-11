@@ -1,7 +1,10 @@
 agents:
 #  gpt-4o: 4
- Meta-Llama-3.1-8B-Instruct: 9
+#  Meta-Llama-3.1-8B-Instruct: 9
 #  gpt-3.5: 1
 #  deepseek-v3: 9
-  # llama3.1-8b: 9
+  qwen2.5-7b-instruct: 1
+  llama3.1-8b: 8
 parse_model: deepseek-v3
+use_strategy: 
+  # - qwen2.5-7b-instruct

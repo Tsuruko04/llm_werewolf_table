@@ -7,14 +7,22 @@ class Game:
     def __init__(self):
         settings = yaml.safe_load(open("./settings.yaml"))
         agents = settings["agents"]
+        use_strategy = settings["use_strategy"] if settings["use_strategy"] else []
         players = [Player(i) for i in range(1,10)]
         i = 0
         for model, num in agents.items():
             for j in range(num):
                 players[i+j].model = model
+                if model in use_strategy:
+                    
+                    with open(f"./strategy/{model}.txt","r") as f:
+                        strategy = f.read()
+                        players[i+j].strategy = strategy
+                        print(f"{players[i+j]} initilized with strategy from ./strategy/{model}.txt")
             i += num
         
-        shuffled = random.sample(players,len(players))
+        shuffled = random.sample(players[1:],len(players)-1)
+        shuffled.insert(6,players[0])
         self.wolves = shuffled[:3]
         self.black_sheep_wall = ["good"]*10
         wolf_ids = [wolf.player_no for wolf in self.wolves]
@@ -42,13 +50,25 @@ class Game:
         print("Game Over")
         self.game_history.append("Game Over")
         self.game_history.append(f"Total usage: {get_total_usage()}")
-        with open(f"public_game_history_{time.time()}.txt","w") as f:
+        exp  = self.get_player(1).summarize_game_experience(self.game_history)
+        self.game_history.append("Experience: "+ exp)
+        if self.get_player(1).strategy:
+            st = "strategy"
+        else:
+            st = "none"
+        with open(f"{self.get_player(1).model}_{st}_public_game_history_{time.time()}.txt","w+") as f:
             f.write("\n".join(self.game_history))
+        with open(f"./experience/{self.get_player(1).model}.txt","w") as f:
+            f.write(exp)
         exit(0)
     
     def get_alive_player_no(self):
         return sorted([player.player_no for player in self.wolves + self.villagers + [self.witch,self.seer,self.hunter] if player.alive])
-    
+    def get_player(self, id):
+        for player in self.wolves + self.villagers + [self.witch,self.seer,self.hunter]:
+            if player.player_no == id:
+                return player
+        return None
     def player_out(self,player_no):
         for player in self.wolves + self.villagers + [self.witch,self.seer,self.hunter]:
             if player.player_no == player_no:
@@ -80,6 +100,12 @@ class Game:
                 if not wolf.alive:
                     continue
                 voted = wolf.action(game_history=self.game_history,player_alive=self.get_alive_player_no(), vote_history=vote_history)
+                if voted not in self.get_alive_player_no():
+                    voted = 0
+                if voted == 0:
+                    print(f"Wolf Player {wolf.player_no} gives up to vote.")
+                    round_vote.append(f"Wolf Player {wolf.player_no} gives up to vote.")
+                    continue
                 print(f"Wolf Player {wolf.player_no} vote to kill Player {voted}")
                 round_vote.append(f"Wolf Player {wolf.player_no} vote to kill Player {voted}")
                 player_vote_count[int(voted)] += 1
@@ -113,9 +139,12 @@ class Game:
         if self.seer.alive:
             verified = self.seer.action(game_history=self.game_history,player_alive=self.get_alive_player_no(),black_sheep_wall=self.black_sheep_wall)
             print(f"Seer verified Player {verified}")
+            
         if self.witch.alive:
             save, poison = self.witch.action(game_history=self.game_history,player_alive=self.get_alive_player_no(),player_killed=wolf_killed,num_antidote=self.num_antidote,num_poison=self.num_poison)
             print(f"Witch saved: {save}, Witch poisoned: {poison}")
+            if poison not in self.get_alive_player_no():
+                poison = 0
             if len(self.game_history) == 0:
                 if save:
                     self.num_antidote = 0
@@ -165,12 +194,14 @@ class Game:
         for player in self.wolves + self.villagers + [self.witch,self.seer,self.hunter]:
             if player.alive:
                 vote = player.vote(self.game_history,[],candidates)
+                if vote not in candidates:
+                    vote = 0
                 if vote == 0:
                     print(f"Player {player.player_no} gives up to vote.")
                     messages.append(f"Player {player.player_no} gives up to vote.")
                     continue
                 print(f"Player {player.player_no} vote to kill Player {vote}")
-                messages.append(f"Player {player.player_no} vote to kill Player {vote}")
+                messages.append(f"Player {player.player_no} vote to sentence Player {vote}")
                 player_vote_count[int(vote)] += 1
         max_count = max(player_vote_count)
         sequence = []
@@ -182,14 +213,14 @@ class Game:
             messages.append(f"Player {sequence[0]}'s last words: {last_words}")
             print(f"Player {sequence[0]}'s last words: {last_words}")
             self.player_out(sequence[0])
-            print(f"Player {sequence[0]} is killed.")
+            print(f"Player {sequence[0]} is sentenced.")
             self.game_history.append("\n".join(messages))
             if sequence[0] == self.hunter.player_no:
                 shot = self.hunter.action(game_history=self.game_history,player_alive=self.get_alive_player_no())
                 if shot!=0:
                     print(f"Hunter shot Player {shot}")
                     self.player_out(shot)
-                    print(f"Player {shot} is killed")
+                    print(f"Player {shot} is out")
                     self.game_history[-1]+=f"Hunter shot Player {shot}"
         else:
             player_vote_count = [0]*10
@@ -201,12 +232,14 @@ class Game:
                 if player.alive:
                     frozen_messages = messages.copy()
                     vote = player.vote(self.game_history,frozen_messages,sequence)
+                    if vote not in sequence:
+                        vote = 0
                     if vote == 0:
                         print(f"Player {player.player_no} gives up to vote.")
                         messages.append(f"Player {player.player_no} gives up to vote.")
                         continue
-                    print(f"Player {player.player_no} vote to kill Player {vote}")
-                    messages.append(f"Player {player.player_no} vote to kill Player {vote}")
+                    print(f"Player {player.player_no} vote to sentence Player {vote}")
+                    messages.append(f"Player {player.player_no} vote to sentence Player {vote}")
                     player_vote_count[int(vote)] += 1
 
             max_count = max(player_vote_count)
@@ -219,17 +252,17 @@ class Game:
                 messages.append(f"Player {sequence[0]}'s last words: {last_words}")
                 print(f"Player {sequence[0]}'s last words: {last_words}")
                 self.player_out(sequence[0])
-                print(f"Player {sequence[0]} is killed.")
+                print(f"Player {sequence[0]} is sentenced.")
                 self.game_history.append("\n".join(messages))
                 if sequence[0] == self.hunter.player_no:
                     shot = self.hunter.action(game_history=self.game_history,player_alive=self.get_alive_player_no())
                     if shot != 0:
                         print(f"Hunter shot Player {shot}")
                         self.player_out(shot)
-                        print(f"Player {shot} is killed.")
+                        print(f"Player {shot} is out.")
                         self.game_history[-1]+=f"Hunter shot Player {shot}"
             else:
-                messages.append("Tied, no one is killed.")
+                messages.append("Tied, no one is sentenced.")
                 self.game_history.append("\n".join(messages))
 
     def day(self, player_out):
@@ -248,28 +281,28 @@ class Game:
         else:
             start = random.choice(player_out)
         print(f"Speech start from position {start}")
-        messages = ["----------Day----------",player_out_message,f"Speech start from position {start}:"]
+        messages = ["----------Day----------",player_out_message,"Alive players: " + str(alive_players),f"Speech start from position {start}:"]
         upward = random.randint(0,1)
         if upward:
             for player_no in alive_players:
                 if player_no >= start:
-                    messages.append(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
-                    print(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
+                    messages.append(f"Player {player_no} SPOKE: {self.speech(player_no,messages)}")
+                    print(f"Player {player_no} SPOKE: {self.speech(player_no,messages)}")
             for player_no in alive_players:
                 if player_no >= start:
                     break
-                messages.append(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
-                print(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
+                messages.append(f"Player {player_no} SPOKE: {self.speech(player_no,messages)}")
+                print(f"Player {player_no} SPOKE: {self.speech(player_no,messages)}")
         else:
             for player_no in alive_players[::-1]:
                 if player_no <= start:
-                    messages.append(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
-                    print(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
+                    messages.append(f"Player {player_no} SPOKE: {self.speech(player_no,messages)}")
+                    print(f"Player {player_no} SPOKE: {self.speech(player_no,messages)}")
             for player_no in alive_players[::-1]:
                 if player_no <= start:
                     break
-                messages.append(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
-                print(f"Player {player_no} spoke: {self.speech(player_no,messages)}")
+                messages.append(f"Player {player_no} SPOKE: {self.speech(player_no,messages)}")
+                print(f"Player {player_no} SPOKE: {self.speech(player_no,messages)}")
 
         self.game_history.append("\n".join(messages))
         self.vote_phase(alive_players)

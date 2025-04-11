@@ -20,14 +20,13 @@ openai_client = OpenAI(
         base_url=OPENAI_BASE_URL if OPENAI_BASE_URL else "https://api.openai.com/v1",
         follow_redirects=True,
     ),
-    timeout = 20
 )
 
 # 初始化FastChat客户端（用于本地模型）
 fastchat_client = OpenAI(
     base_url=FASTCHAT_BASE_URL,
     api_key="EMPTY",  # FastChat不需要验证的API密钥
-    timeout = 20
+    timeout = 60
 )
 
 def generate_response(messages, model="gpt-4o"):
@@ -78,7 +77,7 @@ if __name__ == "__main__":
     
     # 测试OpenAI模型
     print("测试OpenAI模型:")
-    print(generate_response(messages, "gpt-4o"))
+    print(generate_response(messages, "qwen2.5-7b-instruct"))
     print(f"当前Token用量: {get_total_usage()}")
     
     # # 测试FastChat本地模型

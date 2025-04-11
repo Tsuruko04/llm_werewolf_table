@@ -315,7 +315,7 @@ The majority of the Werewolves’ choice will be the final kill target. If there
 Here's the voting history:
 {voting_history}
 End of the history:
-Please provide the player number you choose to kill. Players remained: {players}. Please only provide the number. As a werewolf, I choose to kill:
+Please provide the player number you choose to kill. Players remained: {players}. Your teammates are: {wolves_no}. Please only provide the number. As a werewolf, I choose to kill:
 """
 
 witch_prompt = """
@@ -329,10 +329,12 @@ witch_action_prompt = """
 Now, you need to decide on your action for the night. You can choose to save a player or poison a player.
 The Witch cannot use both potions in the same night and can only save herself on the first night.
 Player {player_killed} has been killed by the Werewolves at night, you have {num_antidote} antidote.
-If you want to use your poison, please provide a player number. Players remained: {players}. You have {num_poison} poison.
+If you want to use your poison, please provide a player number. You have {num_poison} poison.
 If you don't want to use your poison, please choose number 0.
 Remeber, you can only use either antidote or poison in a night.
-Please provide you thought and choice. As the witch, I think:
+Answer whether you want to save the player killed by Werewolves or which player you want to poison.
+Only choose from the players remained: {players}.
+As the witch, I think:
 """
 
 seer_prompt = """
@@ -355,14 +357,14 @@ You are Player {player_no}.
 """
 
 hunter_action_prompt = """
-You have been killed, now you can choose a player to kill.
+You have been out, now you can choose a player to shoot.
 Please provide a player number. Players remained: {players}. If you don't want to shoot, please provide 0. Only provide the number. 
-I choose to kill:
+I choose to shoot:
 """
 
 vote_prompt = """
 Now, it's your turn to vote a player to be sentenced. Please provide a player number from the following players: {players}. If you don't want to vote, please provide 0. Only provide the number.
-I choose to vote:
+As player {player_no}, I choose to vote:
 """
 
 parse_wolf_action_prompt = """
@@ -373,7 +375,8 @@ Only provide the number. For example: Given "I choose to kill Player 4.", you sh
 
 parse_witch_action_prompt = """
 The witch gives the following response: {response}
-Please parse the response and give your answer in the format: yes|no,<player_no>. for example, if save the player killed, please answer: yes,0; if neither want to save nor poison, answer: no,0; if poison player 3, answer: no,3.
+The antidote can save a player killed by Werewolves at night, and the poison can kill a player.
+Please parse the response and give your answer in the format: [yes|no],<player_no>. For example, if the witch want to save player 8 with antidote, please answer: yes,0; if neither want to save nor poison, answer: no,0; if poison player 3, answer: no,3.
 """ 
 parse_seer_action_prompt = """
 The seer gives the following response: {response}
@@ -389,5 +392,10 @@ Only provide the number. For example: Given "I choose to kill Player 4.", you sh
 parse_vote_prompt = """
 The player gives the following response: {response}
 Please parse the response and provide the player number that the player has decided to vote.
-Only provide the number. For example: Given "I choose to vote Player 4.", you should respond with 4. If no player mentioned, please respond 0.
+Only provide the number. For example: Given "I choose to vote Player 4.", you should respond with 4. If no player mentioned or you can't decide, please respond 0.
+"""
+
+summarize_game_experience_prompt = """
+Now the game is over. As the {role} in this game, please analyze the reason for your victory or defeat.
+Give your own experience of being a {role} in this game. I think:
 """
